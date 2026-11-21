@@ -33,7 +33,8 @@ export default function ProModal({ onClose }) {
     email: user?.email || 'student@campus.com',
     amount: paystackSubunit, 
     currency: paystackCurrency, 
-    publicKey: pk_test_9c001ae70ad0798a284f43b958d4896a7d7f45b6
+    // 👇 PASTE YOUR PUBLIC KEY HERE, INSIDE THE QUOTES 👇
+    publicKey: 'pk_test_9c001ae70ad0798a284f43b958d4896a7d7f45b6', 
     metadata: {
       custom_fields: [
         { display_name: "User ID", variable_name: "user_id", value: user?.id },
@@ -43,17 +44,14 @@ export default function ProModal({ onClose }) {
     }
   };
 
-  // 🚨 THIS IS STEP 4: We no longer call Supabase from here! The Webhook does it.
   const onSuccess = (reference) => {
     console.log('Paystack Payment Success. Reference:', reference.reference);
     setProcessing(true);
-    
     toast('Payment successful! Upgrading your account securely...', 'success');
     
-    // Wait 3 seconds to allow the Paystack Webhook to hit your database
     setTimeout(() => {
       toast('Upgrade complete! Please refresh the page.', 'success');
-      window.location.reload(); // Force reload to show the PRO badge
+      window.location.reload(); 
     }, 3000);
   };
 
