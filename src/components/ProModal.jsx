@@ -33,7 +33,7 @@ export default function ProModal({ onClose }) {
     email: user?.email || 'student@campus.com',
     amount: paystackSubunit, 
     currency: paystackCurrency, 
-    publicKey: 'pk_test_YOUR_PUBLIC_KEY_HERE', // <-- MAKE SURE YOUR PK_TEST KEY IS HERE
+    publicKey: pk_test_9c001ae70ad0798a284f43b958d4896a7d7f45b6
     metadata: {
       custom_fields: [
         { display_name: "User ID", variable_name: "user_id", value: user?.id },
