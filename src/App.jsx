@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import Upload from './pages/Upload';
 import Tutors from './pages/Tutors';
 import Leaderboard from './pages/Leaderboard';
+import Profile from './pages/Profile'; // NEW IMPORT
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -20,6 +21,7 @@ function AnimatedRoutes() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
+        {/* Public Routes */}
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -29,6 +31,7 @@ function AnimatedRoutes() {
         <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
         <Route path="/tutors" element={<ProtectedRoute><Tutors /></ProtectedRoute>} />
         <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} /> {/* NEW ROUTE */}
       </Routes>
     </AnimatePresence>
   );
