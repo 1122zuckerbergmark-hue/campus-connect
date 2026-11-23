@@ -9,13 +9,11 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Declare fetchProfile BEFORE useEffect
   const fetchProfile = useCallback(async (userId) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
     setProfile(data);
   }, []);
 
-  // 2. Now useEffect can safely use it
   useEffect(() => {
     const fetchSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -54,8 +52,18 @@ export function AuthProvider({ children }) {
     if (user) fetchProfile(user.id);
   };
 
+  const resetPassword = (email) => 
+    supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+  const updatePassword = (newPassword) =>
+    supabase.auth.updateUser({ password: newPassword });
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ 
+      user, profile, loading, signUp, signIn, signOut, refreshProfile, resetPassword, updatePassword 
+    }}>
       {children}
     </AuthContext.Provider>
   );
