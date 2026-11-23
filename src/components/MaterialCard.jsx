@@ -1,24 +1,27 @@
 import { useState } from 'react';
-import { FileText, Download, Sparkles, Lock, ShieldAlert, MessageSquare, Video, Activity, X } from 'lucide-react';
+import { FileText, Download, Sparkles, Lock, ShieldAlert, MessageSquare, Video, Activity, X, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import AISummarizer from './AISummarizer';
 import ProModal from './ProModal';
 import CommunityModal from './CommunityModal';
 import StudyRoom from './StudyRoom';
+import CreateQuizModal from './CreateQuizModal'; // NEW IMPORT
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 
 export default function MaterialCard({ material }) {
   const { toast } = useToast();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth(); // Added user to check ownership
   const [showAI, setShowAI] = useState(false);
   const [showPro, setShowPro] = useState(false);
   const [showCommunity, setShowCommunity] = useState(false);
   const [showStudyRoom, setShowStudyRoom] = useState(false);
   const [showSimulation, setShowSimulation] = useState(false);
+  const [showQuizCreator, setShowQuizCreator] = useState(false); // NEW STATE
 
   const isLocked = material.is_premium && !profile?.is_pro;
+  const isOwner = user?.id === material.uploaded_by; // Check if user uploaded this
 
   const handleDownload = async () => {
     if (isLocked) return setShowPro(true);
@@ -32,8 +35,7 @@ export default function MaterialCard({ material }) {
   return (
     <>
       <motion.div 
-        whileHover={{ y: -5, scale: 1.01 }} 
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        whileHover={{ y: -5, scale: 1.01 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}
         className={`glass rounded-3xl p-6 transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-full ${isLocked ? 'border-violet/30' : 'hover:border-teal/40 hover:shadow-[0_10px_40px_rgba(94,234,212,0.1)] group'}`}
       >
         {isLocked && (
@@ -83,6 +85,13 @@ export default function MaterialCard({ material }) {
           </div>
           
           <div className="flex items-center gap-2">
+            {/* QUIZ CREATION BUTTON (Only visible to the owner) */}
+            {isOwner && (
+              <button onClick={() => setShowQuizCreator(true)} className="flex items-center gap-1 text-xs text-teal hover:text-white bg-teal/10 hover:bg-teal/20 border border-teal/20 px-3 py-2 rounded-xl font-bold transition-all" title="Create Quiz">
+                <Plus size={14} /> Quiz
+              </button>
+            )}
+
             <button 
               onClick={() => profile?.is_pro ? setShowAI(true) : setShowPro(true)} 
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${profile?.is_pro ? 'text-violet bg-violet/10 border border-violet/20' : 'text-muted bg-white/5 border border-white/10'}`}
@@ -91,7 +100,7 @@ export default function MaterialCard({ material }) {
             </button>
 
             {material.interactive_url ? (
-              <button onClick={() => setShowSimulation(true)} className="flex items-center gap-2 text-white bg-violet/20 hover:bg-violet hover:text-black border border-violet/30 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(167,139,250,0.2)]">
+              <button onClick={() => setShowSimulation(true)} className="flex items-center gap-2 text-white bg-violet/20 hover:bg-violet hover:text-black border border-violet/30 px-4 py-2 rounded-xl text-sm font-bold transition-all">
                 <Activity size={16} /> Lab
               </button>
             ) : (
@@ -107,6 +116,7 @@ export default function MaterialCard({ material }) {
       {showPro && <ProModal onClose={() => setShowPro(false)} />}
       {showCommunity && <CommunityModal material={material} onClose={() => setShowCommunity(false)} />}
       {showStudyRoom && <StudyRoom material={material} onClose={() => setShowStudyRoom(false)} />}
+      {showQuizCreator && <CreateQuizModal material={material} onClose={() => setShowQuizCreator(false)} />} {/* NEW MODAL */}
 
       {showSimulation && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 backdrop-enter">
@@ -116,12 +126,7 @@ export default function MaterialCard({ material }) {
               <h3 className="font-display font-bold text-xl text-white flex items-center gap-2"><Activity className="text-violet" /> Interactive Simulation</h3>
               <button onClick={() => setShowSimulation(false)} className="text-muted hover:text-white bg-white/5 p-2 rounded-full"><X size={20} /></button>
             </div>
-            <iframe 
-              src={material.interactive_url} 
-              className="w-full flex-1 rounded-xl border-0 bg-white"
-              title="Interactive Simulation"
-              allowFullScreen={true}
-            />
+            <iframe src={material.interactive_url} className="w-full flex-1 rounded-xl border-0 bg-white" title="Interactive Simulation" allowFullScreen={true} />
           </div>
         </div>
       )}
