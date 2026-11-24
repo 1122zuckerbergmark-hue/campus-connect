@@ -1,26 +1,22 @@
 import { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { ScrollControls, Scroll, useScroll, Environment, Float, MeshDistortMaterial } from '@react-three/drei';
+import { ScrollControls, Scroll, Float, useScroll } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BookOpen, Users, Brain } from 'lucide-react';
 
-// The 3D Object that reacts to scroll and mouse
 function MorphingShape() {
   const meshRef = useRef();
   const scroll = useScroll();
 
   useFrame((state, delta) => {
-    // 1. Gentle rotation
     meshRef.current.rotation.y += delta * 0.2;
     meshRef.current.rotation.x += delta * 0.1;
 
-    // 2. Scroll animation (moves the object back and rotates it based on scroll)
     const scrollOffset = scroll.offset;
     meshRef.current.position.y = scrollOffset * 5;
     meshRef.current.rotation.z = scrollOffset * Math.PI;
 
-    // 3. Mouse tracking (parallax effect)
     const mouseX = (state.mouse.x * Math.PI) / 10;
     const mouseY = (state.mouse.y * Math.PI) / 10;
     meshRef.current.rotation.x += (mouseY - meshRef.current.rotation.x) * 0.1;
@@ -29,16 +25,15 @@ function MorphingShape() {
 
   return (
     <Float speed={2} rotationIntensity={1} floatIntensity={2}>
-      <mesh ref={meshRef} scale={1.5}>
-        <torusKnotGeometry args={[1, 0.3, 128, 32]} />
-        <MeshDistortMaterial 
+      <mesh ref={meshRef} scale={1.2}>
+        {/* Reduced complexity for mobile performance */}
+        <torusKnotGeometry args={[1, 0.3, 64, 16]} />
+        <meshStandardMaterial 
           color="#5eead4" 
           emissive="#a78bfa"
-          emissiveIntensity={0.5}
+          emissiveIntensity={0.8}
           roughness={0.2} 
-          metalness={0.8} 
-          distort={0.3} 
-          speed={2} 
+          metalness={0.9} 
         />
       </mesh>
     </Float>
@@ -47,22 +42,18 @@ function MorphingShape() {
 
 export default function ThreeScene() {
   return (
-    <div className="h-screen w-full absolute inset-0 -z-10 bg-bg">
-      <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
-        {/* Lighting */}
+    // REMOVED -z-10. The canvas will now sit properly.
+    <div className="h-screen w-full absolute inset-0 z-0 bg-[#050508]">
+      <Canvas camera={{ position: [0, 0, 5], fov: 50 }} dpr={[1, 2]}>
         <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 10]} intensity={1} color="#5eead4" />
-        <directionalLight position={[-10, -10, -10]} intensity={0.5} color="#a78bfa" />
-        <Environment preset="city" />
+        <directionalLight position={[10, 10, 10]} intensity={2} color="#5eead4" />
+        <directionalLight position={[-10, -10, -10]} intensity={1} color="#a78bfa" />
 
-        {/* Scroll Container */}
         <ScrollControls pages={3} damping={0.2}>
           <MorphingShape />
           
-          {/* HTML Content over the 3D Canvas */}
           <Scroll html style={{ width: '100%' }}>
-            
-            {/* PAGE 1: HERO */}
+            {/* PAGE 1 */}
             <section className="h-screen flex flex-col justify-center items-center text-center px-6">
               <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm text-muted mb-8 border-white/10">
@@ -82,7 +73,7 @@ export default function ThreeScene() {
               </motion.div>
             </section>
 
-            {/* PAGE 2: FEATURES (Scroll down to see this) */}
+            {/* PAGE 2 */}
             <section className="h-screen flex flex-col justify-center items-start px-6 md:px-24">
               <h2 className="font-display text-4xl md:text-6xl font-bold mb-6 text-white drop-shadow-2xl">
                 Knowledge. <br/> <span className="text-violet">Connected.</span>
@@ -97,7 +88,7 @@ export default function ThreeScene() {
                   { icon: Users, title: "Tutors", desc: "Secure peer-to-peer" },
                   { icon: Brain, title: "AI Engine", desc: "Instant summaries" }
                 ].map((f, i) => (
-                  <div key={i} className="glass p-6 rounded-2xl border-teal/20">
+                  <div key={i} className="glass p-6 rounded-2xl border-teal/20 bg-black/40 backdrop-blur-md">
                     <f.icon className="text-teal mb-4" size={28} />
                     <h3 className="text-white font-bold text-xl mb-1">{f.title}</h3>
                     <p className="text-muted text-sm">{f.desc}</p>
@@ -106,7 +97,7 @@ export default function ThreeScene() {
               </div>
             </section>
 
-            {/* PAGE 3: CALL TO ACTION */}
+            {/* PAGE 3 */}
             <section className="h-screen flex flex-col justify-center items-center text-center px-6">
               <h2 className="font-display text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-2xl">
                 Ready to <span className="gradient-text">evolve?</span>
@@ -116,7 +107,6 @@ export default function ThreeScene() {
                 Create Free Account <ArrowRight size={24} />
               </Link>
             </section>
-
           </Scroll>
         </ScrollControls>
       </Canvas>
