@@ -24,8 +24,16 @@ export default function CommandPalette() {
       }
       if (e.key === 'Escape') setIsOpen(false);
     };
+    
+    const handleOpen = () => setIsOpen(true);
+
     document.addEventListener('keydown', down);
-    return () => document.removeEventListener('keydown', down);
+    document.addEventListener('open-command-palette', handleOpen);
+    
+    return () => {
+      document.removeEventListener('keydown', down);
+      document.removeEventListener('open-command-palette', handleOpen);
+    };
   }, []);
 
   const filteredCommands = commands.filter((cmd) =>

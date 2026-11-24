@@ -15,13 +15,11 @@ export default function Navbar() {
   
   const [showPro, setShowPro] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [onlineCount, setOnlineCount] = useState(0); // NEW: Real-time presence
+  const [onlineCount, setOnlineCount] = useState(0);
 
-  // REAL-TIME PRESENCE ENGINE
   useEffect(() => {
     if (!user) return;
     
-    // Join a global room called 'campus-online'
     const room = supabase.channel('campus-online', {
       config: { presence: { key: user.id } },
     });
@@ -29,7 +27,6 @@ export default function Navbar() {
     room
       .on('presence', { event: 'sync' }, () => {
         const state = room.presenceState();
-        // Count how many users are currently in the room
         setOnlineCount(Object.keys(state).length);
       })
       .subscribe(async (status) => {
@@ -49,6 +46,10 @@ export default function Navbar() {
     navigate('/');
   };
 
+  const triggerSearch = () => {
+    document.dispatchEvent(new Event('open-command-palette'));
+  };
+
   const isActive = (path) => location.pathname === path;
 
   const navLinks = [
@@ -61,13 +62,12 @@ export default function Navbar() {
 
   return (
     <>
-      <CommandPalette /> {/* MOUNT THE PALETTE GLOBALLY */}
+      <CommandPalette />
       
       <nav className="sticky top-0 z-50 w-full border-b border-white/5 bg-bg/60 backdrop-blur-xl transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           
           <div className="flex items-center gap-6">
-            {/* LOGO */}
             <Link to="/" className="flex items-center gap-3 group" onClick={() => setMobileMenuOpen(false)}>
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal to-violet p-[1px] group-hover:shadow-[0_0_20px_rgba(94,234,212,0.4)] transition-all">
                 <div className="w-full h-full bg-bg rounded-xl flex items-center justify-center">
@@ -79,7 +79,6 @@ export default function Navbar() {
               </span>
             </Link>
 
-            {/* LIVE ONLINE COUNTER */}
             {user && (
               <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold shadow-[0_0_15px_rgba(34,197,94,0.15)]">
                 <Activity size={12} className="animate-pulse" />
@@ -88,13 +87,11 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* DESKTOP NAVIGATION */}
           <div className="hidden lg:flex items-center gap-2">
             {user ? (
               <>
-                {/* SEARCH TRIGGER */}
                 <button 
-                  onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
+                  onClick={triggerSearch}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted bg-white/5 border border-white/10 hover:border-white/20 transition-all mr-2"
                 >
                   <Search size={14} />
@@ -113,7 +110,6 @@ export default function Navbar() {
                   ))}
                 </div>
                 
-                {/* PRO LOGIC */}
                 {profile?.is_pro ? (
                   <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold bg-teal/20 text-teal border border-teal/30 mr-2 shadow-[0_0_15px_rgba(94,234,212,0.2)]">
                     <ShieldCheck size={16} /> PRO
@@ -138,7 +134,6 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* MOBILE MENU TOGGLE */}
           <button 
             className="lg:hidden text-white p-2 hover:bg-white/5 rounded-lg transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -147,14 +142,12 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* MOBILE NAVIGATION DROPDOWN */}
         <div className={`lg:hidden absolute top-20 left-0 w-full bg-surface/95 backdrop-blur-3xl border-b border-white/10 transition-all duration-300 overflow-hidden ${mobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
           <div className="flex flex-col p-6 gap-2">
             {user ? (
               <>
-                {/* Mobile Search */}
                 <button 
-                  onClick={() => { setMobileMenuOpen(false); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true })); }}
+                  onClick={() => { setMobileMenuOpen(false); triggerSearch(); }}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium bg-white/5 text-muted mb-2"
                 >
                   <Search size={20} /> Search Platform...
