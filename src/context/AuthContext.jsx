@@ -12,6 +12,30 @@ export function AuthProvider({ children }) {
   const fetchProfile = useCallback(async (userId) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
     setProfile(data);
+    
+    // STREAK LOGIC
+    if (data) {
+      const today = new Date().toISOString().split('T')[0];
+      const lastActive = data.last_active_date;
+
+      if (lastActive !== today) {
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        let newStreak = data.current_streak || 0;
+        
+        if (lastActive === yesterday) {
+          newStreak += 1; // Kept the streak alive!
+        } else {
+          newStreak = 1; // Streak broken, starting over
+        }
+
+        await supabase.from('profiles').update({ 
+          current_streak: newStreak, 
+          last_active_date: today 
+        }).eq('id', userId);
+        
+        setProfile({ ...data, current_streak: newStreak, last_active_date: today });
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -36,34 +60,15 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
-  const signUp = (email, password, fullName) =>
-    supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    });
-
-  const signIn = (email, password) =>
-    supabase.auth.signInWithPassword({ email, password });
-
+  const signUp = (email, password, fullName) => supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+  const signIn = (email, password) => supabase.auth.signInWithPassword({ email, password });
   const signOut = () => supabase.auth.signOut();
-
-  const refreshProfile = () => {
-    if (user) fetchProfile(user.id);
-  };
-
-  const resetPassword = (email) => 
-    supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-
-  const updatePassword = (newPassword) =>
-    supabase.auth.updateUser({ password: newPassword });
+  const refreshProfile = () => { if (user) fetchProfile(user.id); };
+  const resetPassword = (email) => supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+  const updatePassword = (newPassword) => supabase.auth.updateUser({ password: newPassword });
 
   return (
-    <AuthContext.Provider value={{ 
-      user, profile, loading, signUp, signIn, signOut, refreshProfile, resetPassword, updatePassword 
-    }}>
+    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signOut, refreshProfile, resetPassword, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );

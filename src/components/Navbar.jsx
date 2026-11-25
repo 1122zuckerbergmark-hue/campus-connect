@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import ProModal from './ProModal';
 import CommandPalette from './CommandPalette';
 import { 
-  LogOut, Upload, GraduationCap, Users, BookOpen, Zap, Menu, X, ShieldCheck, Trophy, User, Search
+  LogOut, GraduationCap, Users, BookOpen, Zap, Menu, X, ShieldCheck, Trophy, User, Search, Activity, PlayCircle
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -14,6 +15,30 @@ export default function Navbar() {
   
   const [showPro, setShowPro] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [onlineCount, setOnlineCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const room = supabase.channel('campus-online', {
+      config: { presence: { key: user.id } },
+    });
+
+    room
+      .on('presence', { event: 'sync' }, () => {
+        const state = room.presenceState();
+        setOnlineCount(Object.keys(state).length);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await room.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(room);
+    };
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -28,8 +53,8 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path;
 
   const navLinks = [
+    { name: 'Courses', path: '/courses', icon: PlayCircle },
     { name: 'Materials', path: '/dashboard', icon: BookOpen },
-    { name: 'Upload', path: '/upload', icon: Upload },
     { name: 'Tutors', path: '/tutors', icon: Users },
     { name: 'Leaderboard', path: '/leaderboard', icon: Trophy },
     { name: 'Profile', path: '/profile', icon: User },
@@ -53,6 +78,13 @@ export default function Navbar() {
                 CAMPUS<span className="gradient-text">CONNECT</span>
               </span>
             </Link>
+
+            {user && (
+              <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold shadow-[0_0_15px_rgba(34,197,94,0.15)]">
+                <Activity size={12} className="animate-pulse" />
+                {onlineCount} Online
+              </div>
+            )}
           </div>
 
           <div className="hidden lg:flex items-center gap-2">
