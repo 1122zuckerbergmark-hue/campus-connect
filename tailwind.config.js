@@ -4,11 +4,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: '#050508',
-        surface: '#0e0e15',
+        bg: 'var(--color-bg)',
+        surface: 'var(--color-surface)',
+        text: 'var(--color-text)',
         teal: '#5eead4',
         violet: '#a78bfa',
-        muted: '#8b8b9e',
+        muted: 'var(--color-muted)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

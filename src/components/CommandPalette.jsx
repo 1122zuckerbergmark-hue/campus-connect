@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, BookOpen, Users, Trophy, User, Upload, X } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { Search, BookOpen, Users, Trophy, User, PlayCircle, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CommandPalette() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [dbResults, setDbResults] = useState({ courses: [], materials: [] });
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
 
-  const commands = [
+  const defaultCommands = [
+    { icon: PlayCircle, name: 'Browse Courses', action: () => navigate('/courses') },
     { icon: BookOpen, name: 'Browse Materials', action: () => navigate('/dashboard') },
-    { icon: Upload, name: 'Upload Resource', action: () => navigate('/upload') },
     { icon: Users, name: 'Find a Tutor', action: () => navigate('/tutors') },
     { icon: Trophy, name: 'Campus Leaderboard', action: () => navigate('/leaderboard') },
     { icon: User, name: 'My Profile', action: () => navigate('/profile') },
@@ -24,19 +27,37 @@ export default function CommandPalette() {
       }
       if (e.key === 'Escape') setIsOpen(false);
     };
-    
     const handleOpen = () => setIsOpen(true);
-
     document.addEventListener('keydown', down);
     document.addEventListener('open-command-palette', handleOpen);
-    
     return () => {
       document.removeEventListener('keydown', down);
       document.removeEventListener('open-command-palette', handleOpen);
     };
   }, []);
 
-  const filteredCommands = commands.filter((cmd) =>
+  // REAL-TIME DATABASE SEARCH
+  useEffect(() => {
+    if (query.length < 2) return;
+
+    const searchDatabase = async () => {
+      setIsSearching(true);
+      
+      const { data: courses } = await supabase.from('courses').select('id, title').ilike('title', `%${query}%`).limit(3);
+      const { data: materials } = await supabase.from('materials').select('id, title, course_code').ilike('title', `%${query}%`).limit(3);
+
+      setDbResults({ courses: courses || [], materials: materials || [] });
+      setIsSearching(false);
+    };
+
+    const debounce = setTimeout(searchDatabase, 300);
+    return () => clearTimeout(debounce);
+  }, [query]);
+
+  // If the query is cleared, we reset the DB results safely during render
+  const currentResults = query.length < 2 ? { courses: [], materials: [] } : dbResults;
+
+  const filteredDefault = defaultCommands.filter((cmd) =>
     cmd.name.toLowerCase().includes(query.toLowerCase())
   );
 
@@ -58,36 +79,61 @@ export default function CommandPalette() {
               <input
                 autoFocus
                 type="text"
-                placeholder="Type a command or search..."
+                placeholder="Search courses, materials, or actions..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="flex-1 bg-transparent text-white outline-none placeholder-muted text-lg"
+                className="flex-1 bg-transparent text-text outline-none placeholder-muted text-lg"
               />
-              <button onClick={() => setIsOpen(false)} className="text-muted hover:text-white bg-white/5 p-1 rounded-md">
+              {isSearching && <Loader2 className="animate-spin text-teal mr-2" size={16} />}
+              <button onClick={() => setIsOpen(false)} className="text-muted hover:text-text bg-white/5 p-1 rounded-md">
                 <X size={16} />
               </button>
             </div>
 
-            <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-2">
-              {filteredCommands.length === 0 ? (
-                <div className="text-center py-8 text-muted text-sm">No results found.</div>
-              ) : (
-                filteredCommands.map((cmd, i) => (
-                  <button
-                    key={i}
-                    onClick={() => { cmd.action(); setIsOpen(false); setQuery(''); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-muted hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <cmd.icon size={18} />
-                    <span className="font-medium">{cmd.name}</span>
-                  </button>
-                ))
+            <div className="max-h-[400px] overflow-y-auto custom-scrollbar p-2">
+              
+              {/* DATABASE RESULTS */}
+              {currentResults.courses.length > 0 && (
+                <div className="mb-2">
+                  <div className="px-3 py-2 text-xs font-bold text-violet uppercase tracking-wider">Courses</div>
+                  {currentResults.courses.map(course => (
+                    <button key={course.id} onClick={() => { navigate(`/course/${course.id}`); setIsOpen(false); setQuery(''); }} className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-left text-muted hover:text-text hover:bg-white/10 transition-colors">
+                      <PlayCircle size={16} className="text-violet" />
+                      <span className="font-medium truncate">{course.title}</span>
+                    </button>
+                  ))}
+                </div>
               )}
-            </div>
-            
-            <div className="px-4 py-2 border-t border-white/10 bg-black/20 text-xs text-muted flex justify-between">
-              <span>Navigate with <kbd className="bg-white/10 px-1 rounded">↑</kbd> <kbd className="bg-white/10 px-1 rounded">↓</kbd></span>
-              <span>Close with <kbd className="bg-white/10 px-1 rounded">Esc</kbd></span>
+
+              {currentResults.materials.length > 0 && (
+                <div className="mb-2">
+                  <div className="px-3 py-2 text-xs font-bold text-teal uppercase tracking-wider">Materials</div>
+                  {currentResults.materials.map(material => (
+                    <button key={material.id} onClick={() => { navigate(`/dashboard`); setIsOpen(false); setQuery(''); }} className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-left text-muted hover:text-text hover:bg-white/10 transition-colors">
+                      <BookOpen size={16} className="text-teal" />
+                      <span className="font-medium truncate">{material.title}</span>
+                      <span className="text-xs bg-white/10 px-2 py-0.5 rounded ml-auto">{material.course_code}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* DEFAULT ACTIONS */}
+              {filteredDefault.length > 0 && (
+                <div>
+                  <div className="px-3 py-2 text-xs font-bold text-muted uppercase tracking-wider">Actions</div>
+                  {filteredDefault.map((cmd, i) => (
+                    <button key={i} onClick={() => { cmd.action(); setIsOpen(false); setQuery(''); }} className="w-full flex items-center gap-3 px-4 py-2 rounded-xl text-left text-muted hover:text-text hover:bg-white/10 transition-colors">
+                      <cmd.icon size={16} />
+                      <span className="font-medium">{cmd.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {filteredDefault.length === 0 && currentResults.courses.length === 0 && currentResults.materials.length === 0 && !isSearching && (
+                <div className="text-center py-8 text-muted text-sm">No results found for "{query}".</div>
+              )}
             </div>
           </motion.div>
         </motion.div>
